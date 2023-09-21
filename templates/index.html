@@ -1,0 +1,148 @@
+{% extends "./base.html" %}
+<!--  -->
+{% block body %}
+<!-- Modal -->
+<div
+  class="modal fade"
+  id="exampleModal"
+  tabindex="-1"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="/add_transaction" method="POST">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">اضافة حركة</h1>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-floating mb-3">
+            <input
+              type="text"
+              name="name"
+              class="form-control"
+              id="modal-name"
+              placeholder="."
+              required
+              tabindex="1"
+            />
+            <label for="modal-name">الاسم</label>
+          </div>
+          <div class="form-floating">
+            <input
+              type="number"
+              name="amount"
+              class="form-control"
+              id="modal-amount"
+              placeholder="."
+              required
+              tabindex="2"
+            />
+            <label for="modal-amount">المبلغ</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-danger"
+            data-bs-dismiss="modal"
+            tabindex="4"
+          >
+            اغلاق
+          </button>
+          <button type="submit" class="btn btn-success" tabindex="3">
+            اضافة
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- End Modal -->
+<div class="index-container container mt-3">
+  <div class="d-flex justify-content-between align-items-center my-4">
+    <h2 class="text-center my-2">{{ total }}</h2>
+    {% if request.full_path == "/?zero=True" %}
+    <a href="/" class="btn btn-danger">اخفاء الحسابات المغلقة</a>
+    {% else: %}
+    <a href="?zero=True" class="btn btn-success">اظهار الحسابات المغلقة</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table text-center table-striped table-hover">
+      <thead>
+        <tr>
+          <th colspan="col">الاسم</th>
+          <th colspan="col" class="d-none d-lg-table-cell">آخر حركة</th>
+          <th colspan="col">الصافي</th>
+          <th colspan="col">الخيارات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if customers: %}
+        <!--  -->
+        {% for customer in customers: %}
+        <tr>
+          <td class="py-2">
+            <a
+              href="/ledger?id={{ customer[0] }}"
+              class="link-light text-decoration-none"
+              >{{ customer[1] }}</a
+            >
+          </td>
+          <td class="py-2 d-none d-lg-table-cell">{{ customer[2] }}</td>
+          <td class="py-2">{{ customer[3] }}</td>
+          <td class="text-nowrap py-2">
+            <div
+              class="d-flex justify-content-center gap-2"
+              data-amount="{{ customer[4] }}"
+              data-customer-id="{{ customer[1] }}"
+            >
+              <button
+                type="button"
+                class="btn btn-success d-block order-lg-last"
+                data-bs-toggle="modal"
+                data-bs-target="#exampleModal"
+                class="btn btn-success"
+                data-modal="payment"
+                title="اضافة دفعة"
+              >
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger d-block order-lg-last"
+                data-bs-toggle="modal"
+                data-bs-target="#exampleModal"
+                class="btn btn-success"
+                data-modal="sales"
+                title="اضافة مبلغ"
+              >
+                <i class="fa-solid fa-receipt"></i>
+              </button>
+              <a
+                href="/ledger?id={{ customer[0] }}"
+                class="btn btn-primary"
+                title="كشف حساب"
+              >
+                <i class="fa-solid fa-file-invoice"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        <!--  -->
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="../static/js/modal.js"></script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "./base.html" %}
+<!--  -->
+{% block body %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center my-4">
+    <a href="{{ request.referrer }}" class="btn btn-danger">رجوع</a>
+    <h2 class="text-center my-2">{{ data[0][0] }}</h2>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped text-center">
+      <thead>
+        <tr>
+          <th colspan="col">التاريخ</th>
+          <th colspan="col">المبلغ</th>
+          <th colspan="col">الرصيد</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data: %}
+        <tr>
+          <td>{{ row[1] }}</td>
+          {% if row[2] | int > 0 %}
+          <td style="color: var(--bs-danger)">{{ row[3] }}</td>
+          {% else: %}
+          <td style="color: var(--bs-success)">{{ row[3] }}</td>
+          {% endif %}
+          <!--  -->
+          {% if row[-2] | int > 0 %}
+          <td style="color: var(--bs-danger)">{{ row[-1] }}</td>
+          {% else: %}
+          <td style="color: var(--bs-success)">{{ row[-1] }}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

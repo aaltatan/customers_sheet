@@ -1,0 +1,59 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+  --fade-bg: rgba(0, 0, 0, 0.2);
+}
+
+.login-wrapper {
+  height: 100vh;
+  width: 100%;
+  background: url("../images/bg-landscape-1.jpg");
+  background-size: cover;
+}
+
+.login-wrapper .login-container {
+  height: 100%;
+  max-width: 50ch;
+  background-color: var(--fade-bg);
+  backdrop-filter: blur(5px);
+}
+
+@media print {
+  * {
+    color: black !important;
+    background-color: white !important;
+    text-decoration: none !important;
+  }
+  a:visited {
+    color: black !important;
+    background-color: white !important;
+    text-decoration: none !important;
+  }
+
+  nav {
+    display: none !important;
+  }
+  .index-container > div:first-of-type a {
+    display: none !important;
+  }
+  button {
+    display: none !important;
+  }
+  .index-container table td,
+  .index-container table th {
+    padding: 0 !important;
+  }
+  .index-container table td:last-of-type,
+  .index-container table th:last-of-type {
+    display: none !important;
+  }
+  .index-container table td:nth-of-type(2),
+  .index-container table th:nth-of-type(2) {
+    display: table-cell !important;
+  }
+}
