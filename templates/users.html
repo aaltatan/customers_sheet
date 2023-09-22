@@ -1,0 +1,144 @@
+{% extends './base.html' %}
+<!--  -->
+{% block body %}
+<!--  -->
+<div class="users-container">
+  <div class="container mt-3">
+    {% if do == "Manage" :%}
+    <div class="table-responsive mt-3">
+      <table class="table table-striped table-hover text-center">
+        <thead>
+          <tr>
+            <th colspan="col">id</th>
+            <th colspan="col">Username</th>
+            <th colspan="col">Created</th>
+            <th colspan="col">Options</th>
+          </tr>
+        </thead>
+        {% if users|length : %}
+        <tbody>
+          {% for user in users : %}
+          <tr>
+            <td>{{user[0]}}</td>
+            <td>{{user[1]}}</td>
+            <td>{{user[3]}}</td>
+            <td>
+              <div
+                class="d-flex justify-content-center align-items-center gap-2"
+              >
+                <a
+                  href="?do=Edit&id={{ user[0] }} "
+                  class="btn btn-primary"
+                  title="Edit {{ user[1] }}"
+                >
+                  <i class="fa-solid fa-pencil-square"></i>
+                </a>
+                {% if user[-1] == 1 %}
+                <a
+                  href="?do=Deactivate&id={{ user[0] }} "
+                  class="btn btn-danger"
+                  title="Deactivate {{ user[1] }}"
+                >
+                  <i class="fa-solid fa-xmark-square"></i>
+                </a>
+                {% else: %}
+                <a
+                  href="?do=Activate&id={{ user[0] }} "
+                  class="btn btn-success"
+                  title="Activate {{ user[1] }}"
+                >
+                  <i class="fa-solid fa-check-square"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        {% endif %}
+      </table>
+    </div>
+    {% elif do == "Add" : %}
+    <form action="/users?do=Insert" method="POST">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <div class="form-floating mb-3">
+            <input
+              type="text"
+              name="username"
+              id="user-adduserform"
+              class="form-control"
+              placeholder="."
+              required
+              minlength="4"
+            />
+            <label for="user-adduserform">الاسم</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating mb-3">
+            <input
+              type="password"
+              name="password"
+              id="password-adduserform"
+              class="form-control"
+              placeholder="."
+              required
+              minlength="8"
+            />
+            <label for="password-adduserform">كلمة السر</label>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">اضافة</button>
+    </form>
+    {% elif do == "Insert" : %}
+    <!--  -->
+    {% if session["errors"]|length : %}
+    <a href="{{ request.referrer }}" class="btn btn-danger mb-3">Back</a>
+    <ul class="list-unstyled">
+      {% for err in session["errors"]: %}
+      <li class="alert alert-danger">{{ err }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <!--  -->
+    {% elif do == "Edit" : %}
+    <form action="/users?do=Update" method="POST">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <div class="form-floating mb-3">
+            <input
+              type="text"
+              name="username"
+              id="user-edituserform"
+              class="form-control"
+              placeholder="."
+              required
+              minlength="4"
+            />
+            <label for="user-edituserform">الاسم</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating mb-3">
+            <input
+              type="password"
+              name="password"
+              id="password-edituserform"
+              class="form-control"
+              placeholder="."
+              required
+              minlength="8"
+            />
+            <label for="password-edituserform">كلمة السر</label>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">تعديل</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+<!--  -->
+{% endblock %}

@@ -2,8 +2,9 @@ from flask import Flask, redirect, render_template, request, session
 from flask_restful import Api, Resource
 from flask_session import Session
 from datetime import timedelta
-import hashlib
 import sqlite3
+import hashlib
+import re
 import os
 
 initial_query = \
@@ -172,7 +173,7 @@ get_customer_ledger_query = \
         customers.customer_id = ?
 """
 
-get_all_users_query = \
+get_all_customers_query = \
     """SELECT 
             *
         FROM
@@ -181,6 +182,23 @@ get_all_users_query = \
             customer_name
         ASC
     """
+
+is_admin_query = \
+    """SELECT 
+            is_admin
+        FROM
+            users
+        WHERE
+            user_id = ?
+        LIMIT
+            1
+    """
+
+add_regular_user_query = \
+    """INSERT INTO users(username,user_password,is_activated) VALUES (?,?,1)"""
+
+get_all_users_query = \
+    """SELECT * FROM users WHERE is_admin != 1"""
 
 
 def run_query(query, solo_query=True, params: tuple = (), count=False):
@@ -250,7 +268,7 @@ def index():
     )
     total = f"{run_query(get_customer_total_query)[0][0]:,}"
 
-    all_customers = run_query(get_all_users_query)
+    all_customers = run_query(get_all_customers_query)
 
     return render_template("index.html",
                            navbar="True",
@@ -259,6 +277,59 @@ def index():
                            total=total,
                            all_customers=all_customers
                            )
+
+
+@app.route("/users", methods=["GET", "POST"])
+def users():
+
+    is_admin = run_query(is_admin_query, params=(session.get("user_session"),))
+    not len(is_admin) and redirect("/")
+
+    do = request.args.get("do") or "Manage"
+
+    users = run_query(get_all_users_query)
+
+    if do == "Insert":
+
+        if request.method == "POST":
+
+            username_reg = re.compile(r"^[a-z][a-z0-9\.\_]{3,}$")
+            [inputted_username, inputted_password] = request.form.values()
+
+            errors = []
+
+            not re.search(username_reg, inputted_username) and \
+                errors.append(
+                    "Username must have at least 4 characters and must start with lower case letter and can include period or underscore")
+            len(inputted_password) < 8 and errors.append(
+                "Password must be at least 8 characters")
+
+            user_exists = run_query(
+                get_user_by_username_query, params=(inputted_username,))
+
+            len(user_exists) and errors.append(
+                f"{inputted_username} is exists.")
+
+            if not len(errors):
+
+                run_query(
+                    add_regular_user_query,
+                    params=(inputted_username, sha1(inputted_username))
+                )
+                session["errors"] = []
+                return redirect("/users")
+
+            else:
+
+                session["errors"] = errors
+
+    return render_template(
+        "users.html",
+        page_title="Add User",
+        navbar="True",
+        do=do,
+        users=users
+    )
 
 
 @app.route("/ledger", methods=["GET"])
@@ -287,7 +358,7 @@ def ledger():
     else:
         return redirect("/")
 
-    all_customers = run_query(get_all_users_query)
+    all_customers = run_query(get_all_customers_query)
 
     return render_template(
         "ledger.html",
@@ -331,6 +402,7 @@ def add_transaction():
 def logout():
     session["user_session"] = None
     session["username"] = None
+    session["is_admin"] = None
     return redirect("/login")
 
 
@@ -362,6 +434,12 @@ def login():
             if user_password == sha1(inputted_password):
                 session["user_session"] = user_id
                 session["username"] = inputted_user
+
+                is_admin = run_query(is_admin_query, params=(
+                    session.get("user_session"),))
+                if len(is_admin):
+                    session["is_admin"] = 1
+
                 return redirect("/")
             else:
                 errors.append(f"Password incorrect for {inputted_user}.")
