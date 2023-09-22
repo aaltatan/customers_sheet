@@ -1,70 +1,6 @@
 {% extends "./base.html" %}
 <!--  -->
 {% block body %}
-<!-- Modal -->
-<div
-  class="modal fade"
-  id="exampleModal"
-  tabindex="-1"
-  aria-labelledby="exampleModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form action="/add_transaction" method="POST">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">اضافة حركة</h1>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <div class="form-floating mb-3">
-            <input
-              type="text"
-              name="name"
-              class="form-control"
-              id="modal-name"
-              placeholder="."
-              required
-              tabindex="1"
-            />
-            <label for="modal-name">الاسم</label>
-          </div>
-          <div class="form-floating">
-            <input
-              type="number"
-              name="amount"
-              class="form-control"
-              id="modal-amount"
-              placeholder="."
-              required
-              tabindex="2"
-            />
-            <label for="modal-amount">المبلغ</label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-danger"
-            data-bs-dismiss="modal"
-            tabindex="4"
-          >
-            اغلاق
-          </button>
-          <button type="submit" class="btn btn-success" tabindex="3">
-            اضافة
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-<!-- End Modal -->
 <div class="index-container container mt-3">
   <div class="d-flex justify-content-between align-items-center my-4">
     <h2 class="text-center my-2">{{ total }}</h2>
@@ -144,5 +80,4 @@
   </div>
 </div>
 
-<script src="../static/js/modal.js"></script>
 {% endblock %}

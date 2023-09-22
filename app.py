@@ -172,6 +172,16 @@ get_customer_ledger_query = \
         customers.customer_id = ?
 """
 
+get_all_users_query = \
+    """SELECT 
+            *
+        FROM
+            customers
+        ORDER BY
+            customer_name
+        ASC
+    """
+
 
 def run_query(query, solo_query=True, params: tuple = (), count=False):
 
@@ -240,11 +250,14 @@ def index():
     )
     total = f"{run_query(get_customer_total_query)[0][0]:,}"
 
+    all_customers = run_query(get_all_users_query)
+
     return render_template("index.html",
                            navbar="True",
                            page_title="Sheet",
                            customers=customers,
-                           total=total
+                           total=total,
+                           all_customers=all_customers
                            )
 
 
@@ -274,11 +287,14 @@ def ledger():
     else:
         return redirect("/")
 
+    all_customers = run_query(get_all_users_query)
+
     return render_template(
         "ledger.html",
         navbar="True",
         page_title="كشف حساب " + data[0][0],
-        data=data
+        data=data,
+        all_customers=all_customers
     )
 
 
