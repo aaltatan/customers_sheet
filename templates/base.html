@@ -62,15 +62,33 @@
           id="navbarNav"
         >
           <!--  -->
-          {% if session["is_admin"] == 1: %}
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link" aria-current="page" href="/users"
+              <a class="nav-link text-center" aria-current="page" href="/"
+                >الرئيسية</a
+              >
+            </li>
+            {% if session["is_admin"] == 1: %}
+            <li class="nav-item">
+              <a class="nav-link text-center" aria-current="page" href="/users"
                 >المستخدمون</a
               >
             </li>
+            {% endif %}
+            <li class="nav-item">
+              <a
+                class="nav-link text-center"
+                aria-current="page"
+                href="{{ '/users?do=UpdatePassword&id=' + session.get('user_session')|string }}"
+                >تغيير كلمة المرور</a
+              >
+            </li>
+            <li class="nav-item text-center">
+              <a class="nav-link" aria-current="page" href="/logout"
+                >تسجيل خروج</a
+              >
+            </li>
           </ul>
-          {% endif %}
         </div>
       </div>
     </nav>

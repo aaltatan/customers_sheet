@@ -11,7 +11,7 @@
           <tr>
             <th colspan="col">id</th>
             <th colspan="col">Username</th>
-            <th colspan="col">Created</th>
+            <th colspan="col" class="d-none d-lg-table-cell">Created</th>
             <th colspan="col">Options</th>
           </tr>
         </thead>
@@ -21,7 +21,7 @@
           <tr>
             <td>{{user[0]}}</td>
             <td>{{user[1]}}</td>
-            <td>{{user[3]}}</td>
+            <td class="d-none d-lg-table-cell">{{user[3]}}</td>
             <td>
               <div
                 class="d-flex justify-content-center align-items-center gap-2"
@@ -105,6 +105,7 @@
     <!--  -->
     {% elif do == "Edit" : %}
     <form action="/users?do=Update" method="POST">
+      <input type="hidden" name="userid" value="{{ session.get('user')[0] }}" />
       <div class="row">
         <div class="col-12 col-md-6">
           <div class="form-floating mb-3">
@@ -116,6 +117,7 @@
               placeholder="."
               required
               minlength="4"
+              value="{{ session.get('user')[1] }}"
             />
             <label for="user-edituserform">الاسم</label>
           </div>
@@ -128,8 +130,6 @@
               id="password-edituserform"
               class="form-control"
               placeholder="."
-              required
-              minlength="8"
             />
             <label for="password-edituserform">كلمة السر</label>
           </div>
@@ -137,6 +137,17 @@
       </div>
       <button type="submit" class="btn btn-primary">تعديل</button>
     </form>
+    {% elif do == "Update" : %}
+    <!--  -->
+    {% if session["errors"]|length : %}
+    <a href="{{ request.referrer }}" class="btn btn-danger mb-3">Back</a>
+    <ul class="list-unstyled">
+      {% for err in session["errors"]: %}
+      <li class="alert alert-danger">{{ err }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <!--  -->
     {% endif %}
   </div>
 </div>

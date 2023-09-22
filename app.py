@@ -28,7 +28,9 @@ initial_query = \
                 customer_id INTEGER NOT NULL,
                 transaction_date TEXT DEFAULT CURRENT_TIMESTAMP,
                 amount INTEGER DEFAULT 0,
-                CONSTRAINT fk_customer_id FOREIGN KEY (customer_id) REFERENCES customers (customer_id)
+                user_id INTEGER NOT NULL,
+                CONSTRAINT fk_customer_id FOREIGN KEY (customer_id) REFERENCES customers (customer_id),
+                CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users (user_id)
             );
     """
 
@@ -62,6 +64,63 @@ get_user_by_username_query = \
             username = ?
         LIMIT
             1
+    """
+
+get_users_by_id_except_query = \
+    """SELECT 
+            *
+        FROM
+            users
+        WHERE
+            user_id != ?
+    """
+
+get_user_by_id_query = \
+    """SELECT 
+            *
+        FROM
+            users
+        WHERE
+            user_id = ?
+        LIMIT
+            1
+    """
+
+update_user_with_password_query = \
+    """UPDATE 
+            users 
+        SET 
+            username = ?,
+            user_password = ?
+        WHERE
+            user_id = ?
+    """
+
+update_user_without_password_query = \
+    """UPDATE 
+            users 
+        SET 
+            username = ?
+        WHERE
+            user_id = ?
+    """
+
+activate_user_query = \
+    """UPDATE 
+            users 
+        SET 
+            is_activated = 1
+        WHERE
+            user_id = ?
+    """
+
+deactivate_user_query = \
+    """UPDATE 
+            users 
+        SET 
+            is_activated = 0
+        WHERE
+            user_id = ?
     """
 
 get_customer_by_name_query = \
@@ -190,6 +249,8 @@ is_admin_query = \
             users
         WHERE
             user_id = ?
+        AND
+            is_admin = 1
         LIMIT
             1
     """
@@ -283,13 +344,20 @@ def index():
 def users():
 
     is_admin = run_query(is_admin_query, params=(session.get("user_session"),))
-    not len(is_admin) and redirect("/")
+
+    if not len(is_admin):
+        return redirect("/do=UpdatePassword&id=" + str(session.get("user_session")))
 
     do = request.args.get("do") or "Manage"
+
+    session["user"] = None
 
     users = run_query(get_all_users_query)
 
     if do == "Insert":
+
+        if not len(is_admin):
+            return redirect("/")
 
         if request.method == "POST":
 
@@ -322,6 +390,100 @@ def users():
             else:
 
                 session["errors"] = errors
+
+    elif do == "Edit":
+
+        if not len(is_admin):
+            return redirect("/")
+
+        userid = request.args.get("id") or 0
+        user_exists = run_query(get_user_by_id_query, params=(userid,))
+        if len(user_exists):
+            session["user"] = user_exists[0]
+        else:
+            return redirect("/users")
+
+    elif do == "Update":
+
+        if not len(is_admin):
+            return redirect("/")
+
+        if request.method == "POST":
+
+            username_reg = re.compile(r"^[a-z][a-z0-9\.\_]{3,}$")
+            [userid, inputted_username, inputted_password] = request.form.values()
+
+            errors = []
+
+            user_exists = run_query(
+                get_user_by_id_query, params=(userid,))
+
+            not len(user_exists) and errors.append("The user does not exists")
+
+            not re.search(username_reg, inputted_username) and \
+                errors.append(
+                    "Username must have at least 4 characters and must start with lower case letter and can include period or underscore")
+
+            (len(inputted_password) < 8 and len(inputted_password) != 0) and errors.append(
+                "Password must be at least 8 characters")
+
+            another_user_exists = run_query(
+                get_users_by_id_except_query, params=(userid,))
+
+            another_user_exists = list(
+                map(lambda x: x[1], another_user_exists))
+
+            inputted_username in another_user_exists and errors.append(
+                f"{inputted_username} is exists.")
+
+            if not len(errors):
+
+                if len(inputted_password) == 0:
+                    run_query(
+                        update_user_without_password_query,
+                        params=(inputted_username, userid)
+                    )
+                else:
+                    run_query(
+                        update_user_with_password_query,
+                        params=(
+                            inputted_username,
+                            sha1(inputted_password),
+                            userid
+                        )
+                    )
+
+                session["errors"] = []
+                return redirect("/users")
+
+            else:
+                session["errors"] = errors
+
+    elif do == "Activate":
+
+        if not len(is_admin):
+            return redirect("/")
+
+        userid = request.args.get("id") or 0
+        user_exists = run_query(get_user_by_id_query, params=(userid,))
+
+        if len(user_exists):
+            run_query(activate_user_query, params=(userid,))
+
+        return redirect("/users")
+
+    elif do == "Deactivate":
+
+        if not len(is_admin):
+            return redirect("/")
+
+        userid = request.args.get("id") or 0
+        user_exists = run_query(get_user_by_id_query, params=(userid,))
+
+        if len(user_exists):
+            run_query(deactivate_user_query, params=(userid,))
+
+        return redirect("/users")
 
     return render_template(
         "users.html",

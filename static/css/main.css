@@ -18,9 +18,15 @@
 
 .login-wrapper .login-container {
   height: 100%;
-  max-width: 50ch;
+  width: min(50ch, 100%);
   background-color: var(--fade-bg);
   backdrop-filter: blur(5px);
+}
+
+@media (max-width: 768px) {
+  .login-wrapper .login-container {
+    width: 100%;
+  }
 }
 
 @media print {
