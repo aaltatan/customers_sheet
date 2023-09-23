@@ -2,264 +2,11 @@ from flask import Flask, redirect, render_template, request, session
 from flask_restful import Api, Resource
 from flask_session import Session
 from datetime import timedelta
+from quires import *
 import sqlite3
 import hashlib
 import re
 import os
-
-initial_query = \
-    """CREATE TABLE IF NOT EXISTS
-            users (
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL UNIQUE,
-                user_password TEXT NOT NULL,
-                create_date TEXT DEFAULT CURRENT_TIMESTAMP,
-                is_admin INTEGER BLOB DEFAULT 0,
-                is_activated INTEGER DEFAULT 0
-            );
-        CREATE TABLE IF NOT EXISTS
-            customers (
-                customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                customer_name TEXT NOT NULL,
-                create_date TEXT DEFAULT CURRENT_TIMESTAMP
-            );
-        CREATE TABLE IF NOT EXISTS
-            customers_transactions (
-                customer_id INTEGER NOT NULL,
-                transaction_date TEXT DEFAULT CURRENT_TIMESTAMP,
-                amount INTEGER DEFAULT 0,
-                user_id INTEGER NOT NULL,
-                CONSTRAINT fk_customer_id FOREIGN KEY (customer_id) REFERENCES customers (customer_id),
-                CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users (user_id)
-            );
-    """
-
-add_admin_query = \
-    """INSERT INTO 
-            users(
-                username,
-                user_password,
-                is_admin,
-                is_activated
-            )
-        VALUES
-            (?,?,1,1)
-    """
-
-admin_exists_query = \
-    """SELECT 
-            *
-        FROM
-            users
-        WHERE
-            is_admin = 1
-    """
-
-get_user_by_username_query = \
-    """SELECT 
-            *
-        FROM
-            users
-        WHERE
-            username = ?
-        LIMIT
-            1
-    """
-
-get_users_by_id_except_query = \
-    """SELECT 
-            *
-        FROM
-            users
-        WHERE
-            user_id != ?
-    """
-
-get_user_by_id_query = \
-    """SELECT 
-            *
-        FROM
-            users
-        WHERE
-            user_id = ?
-        LIMIT
-            1
-    """
-
-update_user_with_password_query = \
-    """UPDATE 
-            users 
-        SET 
-            username = ?,
-            user_password = ?
-        WHERE
-            user_id = ?
-    """
-
-update_user_without_password_query = \
-    """UPDATE 
-            users 
-        SET 
-            username = ?
-        WHERE
-            user_id = ?
-    """
-
-activate_user_query = \
-    """UPDATE 
-            users 
-        SET 
-            is_activated = 1
-        WHERE
-            user_id = ?
-    """
-
-deactivate_user_query = \
-    """UPDATE 
-            users 
-        SET 
-            is_activated = 0
-        WHERE
-            user_id = ?
-    """
-
-get_customer_by_name_query = \
-    """SELECT 
-            *
-        FROM
-            customers
-        WHERE
-            customer_name = ?
-        LIMIT
-            1
-    """
-
-get_customer_by_id_query = \
-    """SELECT 
-            *
-        FROM
-            customers
-        WHERE
-            customer_id = ?
-        LIMIT
-            1
-    """
-
-add_customer_query = \
-    """INSERT INTO 
-            customers(customer_name)
-        VALUES
-            (?)
-    """
-
-add_customer_transaction_query = \
-    """INSERT INTO 
-            customers_transactions(customer_id,amount)
-        VALUES
-            (?,?)
-    """
-
-get_next_customer_id_query = \
-    """SELECT seq FROM sqlite_sequence WHERE `name` = 'customers'"""
-
-get_customers_nets_query = \
-    """SELECT 
-            c.customer_id,
-            c.customer_name,
-            t.last_transaction_date,
-            t.net
-        FROM
-            customers c
-        JOIN
-            (
-                SELECT
-                    customer_id,
-                    MAX(transaction_date) AS last_transaction_date,
-                    SUM(amount) AS net
-                FROM
-                    customers_transactions
-                GROUP BY
-                    customer_id
-            ) t ON c.customer_id = t.customer_id
-        WHERE
-            t.net != 0
-        ORDER BY
-            c.customer_name
-    """
-
-get_customers_nets_with_zeros_query = \
-    """SELECT 
-            c.customer_id,
-            c.customer_name,
-            t.last_transaction_date,
-            t.net
-        FROM
-            customers c
-        JOIN
-            (
-                SELECT
-                    customer_id,
-                    MAX(transaction_date) AS last_transaction_date,
-                    SUM(amount) AS net
-                FROM
-                    customers_transactions
-                GROUP BY
-                    customer_id
-            ) t ON c.customer_id = t.customer_id
-        ORDER BY
-            c.customer_name
-    """
-
-get_customer_total_query = \
-    """SELECT 
-            SUM(amount)
-        FROM
-            customers_transactions
-    """
-
-get_customer_ledger_query = \
-    """SELECT 
-        customers.customer_name,
-        customers_transactions.transaction_date,
-        customers_transactions.amount
-    FROM
-        customers_transactions
-    LEFT JOIN
-        customers
-    ON
-        customers_transactions.customer_id = customers.customer_id
-    WHERE
-        customers.customer_id = ?
-"""
-
-get_all_customers_query = \
-    """SELECT 
-            *
-        FROM
-            customers
-        ORDER BY
-            customer_name
-        ASC
-    """
-
-is_admin_query = \
-    """SELECT 
-            is_admin
-        FROM
-            users
-        WHERE
-            user_id = ?
-        AND
-            is_admin = 1
-        LIMIT
-            1
-    """
-
-add_regular_user_query = \
-    """INSERT INTO users(username,user_password,is_activated) VALUES (?,?,1)"""
-
-get_all_users_query = \
-    """SELECT * FROM users WHERE is_admin != 1"""
 
 
 def run_query(query, solo_query=True, params: tuple = (), count=False):
@@ -305,6 +52,7 @@ api = Api(app)
 Session(app)
 
 
+# set routes
 @app.before_request
 def make_session_permanent():
     session.permanent = True
@@ -321,13 +69,18 @@ def index():
     else:
         customers = run_query(get_customers_nets_query)
 
-    customers = map(
-        lambda x: tuple(
-            list(x)[:-1] + [f"{int(list(x)[-1]):,}"] + [list(x)[-1]]
-        ),
-        customers
-    )
-    total = f"{run_query(get_customer_total_query)[0][0]:,}"
+    total = 0
+
+    session["errors"] = []
+
+    if customers:
+        customers = map(
+            lambda x: tuple(
+                list(x)[:-1] + [f"{int(list(x)[-1]):,}"] + [list(x)[-1]]
+            ),
+            customers
+        )
+        total = f"{run_query(get_customer_total_query)[0][0]:,}" 
 
     all_customers = run_query(get_all_customers_query)
 
@@ -345,16 +98,17 @@ def users():
 
     is_admin = run_query(is_admin_query, params=(session.get("user_session"),))
 
-    if not len(is_admin):
-        return redirect("/do=UpdatePassword&id=" + str(session.get("user_session")))
-
     do = request.args.get("do") or "Manage"
 
     session["user"] = None
 
     users = run_query(get_all_users_query)
 
-    if do == "Insert":
+    if do == "Manage":
+        if not len(is_admin):
+            return redirect("/")
+
+    elif do == "Insert":
 
         if not len(is_admin):
             return redirect("/")
@@ -485,6 +239,39 @@ def users():
 
         return redirect("/users")
 
+    elif do == "UpdatePassword":
+
+        userid = session["user_session"]
+        user_exists = run_query(get_user_by_id_query, params=(userid,))
+
+        errors = []
+
+        if len(user_exists) and request.method == "POST":
+
+            [inputted_last_password,inputted_new_password] = request.form.values()
+            password = run_query(get_user_by_id_query,params=(userid,))[0][2]
+
+            sha1(inputted_last_password) != password and errors.append("كلمة السر القديمة غير مطابقة")
+            len(inputted_new_password) < 8 and errors.append("يجب ان تكون كلمة السر الجديدة 8 احرف او أكثر")
+            inputted_last_password == inputted_new_password and errors.append("يجب ان تكون كلمة السر الجديدة مختلفة عن القديمة")
+
+            if len(errors):
+                session["errors"] = errors
+            else:
+                run_query(update_user_password_query,params=(sha1(inputted_new_password),userid,))
+                session["errors"] = []
+                return redirect("/logout")
+
+        else:
+            return redirect("/")
+        
+    elif do == "EditPassword":
+
+        userid = session["user_session"]
+        user_exists = run_query(get_user_by_id_query, params=(userid,))
+        if not len(user_exists):
+            return redirect("/users")
+
     return render_template(
         "users.html",
         page_title="Add User",
@@ -544,7 +331,7 @@ def add_transaction():
             customer_id = customer_exists[0][0]
             run_query(
                 add_customer_transaction_query,
-                params=(customer_id, amount)
+                params=(customer_id, amount, session["user_session"])
             )
 
         else:
@@ -554,7 +341,7 @@ def add_transaction():
             run_query(add_customer_query, params=(customer_name,))
             run_query(
                 add_customer_transaction_query,
-                params=(customer_id, amount)
+                params=(customer_id, amount, session["user_session"])
             )
 
         return redirect("/")

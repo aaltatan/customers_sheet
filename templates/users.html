@@ -5,23 +5,35 @@
 <div class="users-container">
   <div class="container mt-3">
     {% if do == "Manage" :%}
+    <a
+      href="/users?do=Add"
+      class="btn btn-primary my-3 rounded-circle d-flex justify-content-center align-items-center position-fixed end-0 bottom-0 m-3"
+      style="aspect-ratio: 1/1; width: 40px"
+      title="اضافة مستخدم جديد"
+    >
+      <i class="fa-solid fa-plus"></i>
+    </a>
     <div class="table-responsive mt-3">
-      <table class="table table-striped table-hover text-center">
+      <table class="table table-striped table-hover text-center align-middle">
         <thead>
           <tr>
             <th colspan="col">id</th>
             <th colspan="col">Username</th>
             <th colspan="col" class="d-none d-lg-table-cell">Created</th>
+            <th colspan="col" class="d-none d-lg-table-cell">Activation</th>
             <th colspan="col">Options</th>
           </tr>
         </thead>
         {% if users|length : %}
         <tbody>
           {% for user in users : %}
-          <tr>
+          <tr class="{{ 'table-danger' if user[-1] != 1 else ''  }}">
             <td>{{user[0]}}</td>
             <td>{{user[1]}}</td>
             <td class="d-none d-lg-table-cell">{{user[3]}}</td>
+            <td class="d-none d-lg-table-cell">
+              {{ 'Activated' if user[-1] == 1 else "Deactivated"}}
+            </td>
             <td>
               <div
                 class="d-flex justify-content-center align-items-center gap-2"
@@ -138,6 +150,51 @@
       <button type="submit" class="btn btn-primary">تعديل</button>
     </form>
     {% elif do == "Update" : %}
+    <!--  -->
+    {% if session["errors"]|length : %}
+    <a href="{{ request.referrer }}" class="btn btn-danger mb-3">Back</a>
+    <ul class="list-unstyled">
+      {% for err in session["errors"]: %}
+      <li class="alert alert-danger">{{ err }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <!--  -->
+    {% elif do == "EditPassword" : %}
+    <form action="/users?do=UpdatePassword" method="POST">
+      <div class="row">
+        <div class="col-12 col-md-6">
+          <div class="form-floating mb-3">
+            <input
+              type="password"
+              name="oldpassword"
+              id="user-editpasswordform"
+              class="form-control"
+              placeholder="."
+              required
+              minlength="8"
+            />
+            <label for="oldpassword-editpasswordform">كلمة السر الحالية</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating mb-3">
+            <input
+              type="password"
+              name="newpassword"
+              id="newpassword-editpasswordform"
+              class="form-control"
+              placeholder="."
+              required
+              minlength="8"
+            />
+            <label for="newpassword-editpasswordform">كلمة السر القديمة</label>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">تعديل</button>
+    </form>
+    {% elif do == "UpdatePassword" : %}
     <!--  -->
     {% if session["errors"]|length : %}
     <a href="{{ request.referrer }}" class="btn btn-danger mb-3">Back</a>

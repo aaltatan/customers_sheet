@@ -7,22 +7,25 @@
     <h2 class="text-center my-2">{{ data[0][0] }}</h2>
   </div>
   <div class="table-responsive">
-    <table class="table table-striped text-center">
+    <table
+      class="table table-striped table-hover text-center align-middle text-nowrap"
+    >
       <thead>
         <tr>
           <th colspan="col">التاريخ</th>
           <th colspan="col">المبلغ</th>
           <th colspan="col">الرصيد</th>
+          <th colspan="col">المستخدم</th>
         </tr>
       </thead>
       <tbody>
         {% for row in data: %}
         <tr>
-          <td>{{ row[1] }}</td>
-          {% if row[2] | int > 0 %}
-          <td style="color: var(--bs-danger)">{{ row[3] }}</td>
+          <td>{{ row[1].split(" ")[0] }}</td>
+          {% if row[3] | int > 0 %}
+          <td style="color: var(--bs-danger)">{{ row[4] }}</td>
           {% else: %}
-          <td style="color: var(--bs-success)">{{ row[3] }}</td>
+          <td style="color: var(--bs-success)">{{ row[4] }}</td>
           {% endif %}
           <!--  -->
           {% if row[-2] | int > 0 %}
@@ -30,6 +33,7 @@
           {% else: %}
           <td style="color: var(--bs-success)">{{ row[-1] }}</td>
           {% endif %}
+          <td>{{ row[2] }}</td>
         </tr>
         {% endfor %}
       </tbody>
