@@ -15,7 +15,7 @@
       rel="stylesheet"
       href="{{ url_for('static',filename='css/all.min.css') }}"
     />
-    <title>{{ page_title }}</title>
+    <title class="text-center">{% block title %}{% endblock %}</title>
   </head>
   <body data-bs-theme="dark">
     {% if navbar == "True" %}
@@ -80,6 +80,7 @@
           class="btn btn-primary d-block order-lg-last"
           data-bs-toggle="modal"
           data-bs-target="#exampleModal"
+          data-nav-modal
         >
           <i class="fa-solid fa-user-plus"></i>
         </button>

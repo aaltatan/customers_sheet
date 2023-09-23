@@ -1,5 +1,7 @@
 {% extends "./base.html" %}
 <!--  -->
+{% block title %}تسجيل الدخول{% endblock %}
+<!--  -->
 {% block body %}
 <div class="login-wrapper">
   <div
@@ -10,6 +12,17 @@
       <p class="text-white-50 text-center text-uppercase">
         Please fill the form
       </p>
+      {% with messages = get_flashed_messages() %}
+      <!--  -->
+      {% if messages : %}
+      <ul class="list-unstyled">
+        {% for message in messages: %}
+        <li class="alert alert-success">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <!--  -->
+      {% endwith %}
       <ul class="list-unstyled">
         {% if errors %}
         <!--  -->

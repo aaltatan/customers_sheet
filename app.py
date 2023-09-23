@@ -1,6 +1,4 @@
-from flask import Flask, redirect, render_template, request, session
-from flask_restful import Api, Resource
-from flask_session import Session
+from flask import Flask, redirect, render_template, request, session, flash
 from datetime import timedelta
 from quires import *
 import sqlite3
@@ -40,16 +38,13 @@ not len(admin_exists) and run_query(
     params=("admin", sha1("Qazasd@123"))
 )
 
-
 # set the flask app
 templates_dir = os.path.join("./templates")
 static_dir = os.path.join("./static")
 
 app = Flask(__name__, template_folder=templates_dir, static_folder=static_dir)
+app.config["SECRET_KEY"] = "Qazasd@123423423"
 app.secret_key = "Qazasd@123"
-app.config['SESSION_TYPE'] = 'filesystem'
-api = Api(app)
-Session(app)
 
 
 # set routes
@@ -61,8 +56,16 @@ def make_session_permanent():
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+
     if not session.get("user_session"):
         return redirect("/login")
+
+    user_deactivated = run_query(
+        get_deactivated_user_by_id_query,
+        params=(session["user_session"],)
+    )
+    if len(user_deactivated):
+        return redirect("/logout")
 
     if request.full_path == "/?zero=True":
         customers = run_query(get_customers_nets_with_zeros_query)
@@ -80,13 +83,12 @@ def index():
             ),
             customers
         )
-        total = f"{run_query(get_customer_total_query)[0][0]:,}" 
+        total = f"{run_query(get_customer_total_query)[0][0]:,}"
 
     all_customers = run_query(get_all_customers_query)
 
     return render_template("index.html",
                            navbar="True",
-                           page_title="Sheet",
                            customers=customers,
                            total=total,
                            all_customers=all_customers
@@ -136,9 +138,10 @@ def users():
 
                 run_query(
                     add_regular_user_query,
-                    params=(inputted_username, sha1(inputted_username))
+                    params=(inputted_username, sha1(inputted_password))
                 )
                 session["errors"] = []
+                flash("تم إضافة المستخدم بنجاح")
                 return redirect("/users")
 
             else:
@@ -208,6 +211,7 @@ def users():
                     )
 
                 session["errors"] = []
+                flash("تم تعديل المستخدم بنجاح")
                 return redirect("/users")
 
             else:
@@ -224,6 +228,7 @@ def users():
         if len(user_exists):
             run_query(activate_user_query, params=(userid,))
 
+        flash("تم تفعيل المستخدم بنجاح")
         return redirect("/users")
 
     elif do == "Deactivate":
@@ -237,6 +242,7 @@ def users():
         if len(user_exists):
             run_query(deactivate_user_query, params=(userid,))
 
+        flash("تم إلغاء تفعيل المستخدم بنجاح")
         return redirect("/users")
 
     elif do == "UpdatePassword":
@@ -248,23 +254,31 @@ def users():
 
         if len(user_exists) and request.method == "POST":
 
-            [inputted_last_password,inputted_new_password] = request.form.values()
-            password = run_query(get_user_by_id_query,params=(userid,))[0][2]
+            [inputted_last_password, inputted_new_password] = request.form.values()
+            password = run_query(get_user_by_id_query, params=(userid,))[0][2]
 
-            sha1(inputted_last_password) != password and errors.append("كلمة السر القديمة غير مطابقة")
-            len(inputted_new_password) < 8 and errors.append("يجب ان تكون كلمة السر الجديدة 8 احرف او أكثر")
-            inputted_last_password == inputted_new_password and errors.append("يجب ان تكون كلمة السر الجديدة مختلفة عن القديمة")
+            sha1(inputted_last_password) != password and errors.append(
+                "كلمة السر القديمة غير مطابقة"
+            )
+            len(inputted_new_password) < 8 and errors.append(
+                "يجب ان تكون كلمة السر الجديدة 8 احرف او أكثر"
+            )
+            inputted_last_password == inputted_new_password and errors.append(
+                "يجب ان تكون كلمة السر الجديدة مختلفة عن القديمة"
+            )
 
             if len(errors):
                 session["errors"] = errors
             else:
-                run_query(update_user_password_query,params=(sha1(inputted_new_password),userid,))
+                run_query(update_user_password_query, params=(
+                    sha1(inputted_new_password), userid,))
                 session["errors"] = []
+                flash("تم تغيير كلمة المرور بنجاح")
                 return redirect("/logout")
 
         else:
             return redirect("/")
-        
+
     elif do == "EditPassword":
 
         userid = session["user_session"]
@@ -274,7 +288,6 @@ def users():
 
     return render_template(
         "users.html",
-        page_title="Add User",
         navbar="True",
         do=do,
         users=users
@@ -283,6 +296,14 @@ def users():
 
 @app.route("/ledger", methods=["GET"])
 def ledger():
+
+    user_deactivated = run_query(
+        get_deactivated_user_by_id_query,
+        params=(session["user_session"],)
+    )
+    if len(user_deactivated):
+        return redirect("/logout")
+
     customer_id = request.args.get("id")
     customer_exists = run_query(
         get_customer_by_id_query,
@@ -312,7 +333,6 @@ def ledger():
     return render_template(
         "ledger.html",
         navbar="True",
-        page_title="كشف حساب " + data[0][0],
         data=data,
         all_customers=all_customers
     )
@@ -320,9 +340,18 @@ def ledger():
 
 @app.route("/add_transaction", methods=["GET", "POST"])
 def add_transaction():
+
+    user_deactivated = run_query(
+        get_deactivated_user_by_id_query,
+        params=(session["user_session"],)
+    )
+    if len(user_deactivated):
+        return redirect("/logout")
+
     if request.method == "POST":
 
         [customer_name, amount] = request.form.values()
+        customer_name = customer_name.strip()
         customer_exists = run_query(
             get_customer_by_name_query, params=(customer_name,))
 
@@ -331,7 +360,7 @@ def add_transaction():
             customer_id = customer_exists[0][0]
             run_query(
                 add_customer_transaction_query,
-                params=(customer_id, amount, session["user_session"])
+                params=(customer_id, int(amount), session["user_session"])
             )
 
         else:
@@ -341,8 +370,15 @@ def add_transaction():
             run_query(add_customer_query, params=(customer_name,))
             run_query(
                 add_customer_transaction_query,
-                params=(customer_id, amount, session["user_session"])
+                params=(customer_id, int(amount), session["user_session"])
             )
+
+        if int(amount) > 0:
+            flash("تمت اضافة " + str(abs(int(amount))) +
+                  " على " + customer_name + " بنجاح")
+        else:
+            flash("تمت قبض " + str(abs(int(amount))) +
+                  " من " + customer_name + " بنجاح")
 
         return redirect("/")
 
@@ -350,6 +386,7 @@ def add_transaction():
 @app.route("/logout")
 def logout():
     session["user_session"] = None
+    flash("Bye Bye " + session["username"])
     session["username"] = None
     session["is_admin"] = None
     return redirect("/login")
@@ -366,7 +403,7 @@ def login():
         [inputted_user, inputted_password] = request.form.values()
 
         user_exists = run_query(
-            get_user_by_username_query,
+            get_user_by_username_login_query,
             params=(inputted_user,)
         )
 
@@ -383,7 +420,7 @@ def login():
             if user_password == sha1(inputted_password):
                 session["user_session"] = user_id
                 session["username"] = inputted_user
-
+                flash('أهلاً وسهلاً' + " " + inputted_user)
                 is_admin = run_query(is_admin_query, params=(
                     session.get("user_session"),))
                 if len(is_admin):
@@ -395,7 +432,6 @@ def login():
                 return render_template(
                     "login.html",
                     errors=errors,
-                    page_title="Login",
                     navbar="False"
                 )
         else:
@@ -403,13 +439,11 @@ def login():
             return render_template(
                 "login.html",
                 errors=errors,
-                page_title="Login",
                 navbar="False"
             )
 
     return render_template(
         "login.html",
-        page_title="Login",
         navbar="False"
     )
 

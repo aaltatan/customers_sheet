@@ -57,6 +57,32 @@ get_user_by_username_query = \
             1
     """
 
+get_user_by_username_login_query = \
+    """SELECT 
+            *
+        FROM
+            users
+        WHERE
+            username = ?
+        AND
+            is_activated = 1
+        LIMIT
+            1
+    """
+
+get_deactivated_user_by_id_query = \
+    """SELECT 
+            *
+        FROM
+            users
+        WHERE
+            user_id = ?
+        AND
+            is_activated = 0
+        LIMIT
+            1
+    """
+
 get_users_by_id_except_query = \
     """SELECT 
             *

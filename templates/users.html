@@ -1,10 +1,14 @@
 {% extends './base.html' %}
 <!--  -->
-{% block body %}
-<!--  -->
+{% block title %} {% if do == "Manage" : %} المستخدمون {% elif do == "Add" : %}
+اضافة مستخدم {% elif do == "Insert" : %} اضافة مستخدم {% elif do == "Update" :
+%} تعديل مستخدم {% elif do == "Edit" : %} تعديل مستخدم {% elif do ==
+"EditPassword" : %} تعديل كلمة المرور {% elif do == "UpdatePassword" : %} تعديل
+كلمة المرور {% endif %} {% endblock %} {% block body %}
 <div class="users-container">
   <div class="container mt-3">
     {% if do == "Manage" :%}
+    <!--  -->
     <a
       href="/users?do=Add"
       class="btn btn-primary my-3 rounded-circle d-flex justify-content-center align-items-center position-fixed end-0 bottom-0 m-3"
@@ -14,6 +18,17 @@
       <i class="fa-solid fa-plus"></i>
     </a>
     <div class="table-responsive mt-3">
+      {% with messages = get_flashed_messages() %}
+      <!--  -->
+      {% if messages : %}
+      <ul class="list-unstyled">
+        {% for message in messages: %}
+        <li class="alert alert-success">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <!--  -->
+      {% endwith %}
       <table class="table table-striped table-hover text-center align-middle">
         <thead>
           <tr>
