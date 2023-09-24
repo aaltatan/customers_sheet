@@ -1,5 +1,6 @@
-from flask import Flask, redirect, render_template, request, session, flash
-from datetime import timedelta
+from flask import Flask, redirect, render_template, request, session, flash, send_file
+from datetime import timedelta, datetime
+import openpyxl
 from quires import *
 import re
 import os
@@ -31,6 +32,13 @@ def make_session_permanent():
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+
+    temp_dir = os.path.join("temp")
+    excel_files = os.listdir(temp_dir)
+    for file in excel_files:
+        if file.split("\\")[-1] == "blank.xlsx":
+            continue
+        os.remove(os.path.join(temp_dir, file))
 
     if not session.get("user_session"):
         return redirect("/login")
@@ -68,6 +76,28 @@ def index():
                            total=total,
                            all_customers=all_customers
                            )
+
+
+@app.route("/export")
+def export_excel():
+
+    file_name = datetime.today().strftime("%Y_%m_%d___%H_%M_%S")
+
+    data = run_query(get_customers_nets_query)
+
+    data = [("#", "الاسم", "آخر حركة", "المبغ")] + data
+
+    wb = openpyxl.load_workbook(f"./temp/blank.xlsx")
+    ws = wb.active
+
+    ws.delete_rows(1, ws.max_row)
+
+    for row in data:
+        ws.append(row)
+
+    wb.save(f"./temp/{file_name}.xlsx")
+    wb.close()
+    return send_file(f"./temp/{file_name}.xlsx", as_attachment=True)
 
 
 @app.route("/users", methods=["GET", "POST"])
@@ -453,4 +483,4 @@ def login():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")
