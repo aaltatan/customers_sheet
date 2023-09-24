@@ -45,7 +45,9 @@
               >{{ customer[1] }}</a
             >
           </td>
-          <td class="py-2 d-none d-lg-table-cell">{{ customer[2] }}</td>
+          <td class="py-2 d-none d-lg-table-cell">
+            {{ customer[2].split()[0] }}
+          </td>
           <td class="py-2">{{ customer[3] }}</td>
           <td class="text-nowrap py-2">
             <div

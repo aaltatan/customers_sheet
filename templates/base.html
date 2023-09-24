@@ -58,6 +58,14 @@
                 >المستخدمون</a
               >
             </li>
+            <li class="nav-item border-bottom border-1 border-dark-subtle p-0">
+              <a
+                class="dropdown-item text-end py-2 align-middle confirm"
+                aria-current="page"
+                href="/delete_closed_account"
+                >حذف الحسابات المغلقة</a
+              >
+            </li>
             {% endif %}
             <li class="nav-item border-bottom border-1 border-dark-subtle p-0">
               <a
@@ -232,7 +240,8 @@
     {% block body %}
     <!--  -->
     {% endblock %}
-    <script src="../static/js/modal.js"></script>
+    <script src="{{ url_for('static',filename='js/confirm.js') }}"></script>
+    <script src="{{ url_for('static',filename='js/modal.js') }}"></script>
     <script src="{{ url_for('static',filename='js/bootstrap.bundle.min.js') }}"></script>
   </body>
 </html>

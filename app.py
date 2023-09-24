@@ -1,33 +1,8 @@
 from flask import Flask, redirect, render_template, request, session, flash
 from datetime import timedelta
 from quires import *
-import sqlite3
-import hashlib
 import re
 import os
-
-
-def run_query(query, solo_query=True, params: tuple = (), count=False):
-
-    db = sqlite3.connect("./app.db")
-    cr = db.cursor()
-
-    if solo_query:
-        cr.execute(query, params) if params else cr.execute(query)
-    else:
-        cr.executescript(query, params) if params \
-            else cr.executescript(query)
-
-    result = cr.rowcount if count else cr.fetchall()
-
-    db.commit()
-
-    return result
-
-
-def sha1(string: str) -> str:
-    """ Generate hash password from a string"""
-    return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 
 # set the database
@@ -381,6 +356,35 @@ def add_transaction():
                   " من " + customer_name + " بنجاح")
 
         return redirect("/")
+
+
+@app.route("/delete_closed_account")
+def delete_closed_account():
+
+    user_deactivated = run_query(
+        get_deactivated_user_by_id_query,
+        params=(session["user_session"],)
+    )
+    if len(user_deactivated):
+        return redirect("/logout")
+
+    if not session["is_admin"]:
+        return redirect("/")
+
+    if len(run_query(get_customers_closed_query)):
+        closed_account = [i[0] for i in run_query(get_customers_closed_query)]
+
+        if len(delete_all_customer_transactions):
+            for account in closed_account:
+                run_query(delete_all_customer_transactions, params=(account,))
+                run_query(delete_customer, params=(account,))
+
+    else:
+        flash("لا يوجد حسابات مغلقة")
+        return redirect("/")
+
+    flash("تم حذف جميع الحسابات المغلقة")
+    return redirect("/")
 
 
 @app.route("/logout")

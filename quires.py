@@ -1,3 +1,7 @@
+import sqlite3
+import hashlib
+
+
 initial_query = \
     """CREATE TABLE IF NOT EXISTS
             users (
@@ -213,6 +217,28 @@ get_customers_nets_query = \
             c.customer_name
     """
 
+get_customers_closed_query = \
+    """SELECT 
+            c.customer_id,
+            c.customer_name
+        FROM
+            customers c
+        JOIN
+            (
+                SELECT
+                    customer_id,
+                    SUM(amount) AS net
+                FROM
+                    customers_transactions
+                GROUP BY
+                    customer_id
+            ) t ON c.customer_id = t.customer_id
+        WHERE
+            t.net == 0
+        ORDER BY
+            c.customer_name
+    """
+
 get_customers_nets_with_zeros_query = \
     """SELECT 
             c.customer_id,
@@ -263,6 +289,12 @@ get_customer_ledger_query = \
         customers.customer_id = ?
 """
 
+delete_all_customer_transactions = \
+    """DELETE FROM customers_transactions WHERE customer_id = ?"""
+
+delete_customer = \
+    """DELETE FROM customers WHERE customer_id = ?"""
+
 get_all_customers_query = \
     """SELECT 
             *
@@ -291,3 +323,26 @@ add_regular_user_query = \
 
 get_all_users_query = \
     """SELECT * FROM users WHERE is_admin != 1"""
+
+
+def run_query(query, solo_query=True, params: tuple = (), count=False):
+
+    db = sqlite3.connect("./app.db")
+    cr = db.cursor()
+
+    if solo_query:
+        cr.execute(query, params) if params else cr.execute(query)
+    else:
+        cr.executescript(query, params) if params \
+            else cr.executescript(query)
+
+    result = cr.rowcount if count else cr.fetchall()
+
+    db.commit()
+
+    return result
+
+
+def sha1(string: str) -> str:
+    """ Generate hash password from a string"""
+    return hashlib.sha1(string.encode('utf-8')).hexdigest()
