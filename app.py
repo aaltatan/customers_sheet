@@ -6,6 +6,8 @@ import re
 import os
 
 
+os.chdir(os.path.dirname(os.path.abspath(__name__)))
+
 # set the database
 run_query(initial_query, solo_query=False)
 admin_exists = run_query(admin_exists_query)
